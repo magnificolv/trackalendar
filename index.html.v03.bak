@@ -300,21 +300,6 @@ body {
   .day-cell .dc-entry { font-size: 9px; padding: 1px 3px; }
   .modal { padding: 14px; }
 }
-
-/* ═══════════ PRESET BUTTONS + STATUS ═══════════ */
-.preset-btn {
-  width: 34px; height: 34px; border-radius: 8px; cursor: pointer;
-  font-size: 16px; display: flex; align-items: center; justify-content: center;
-  transition: all 0.15s; padding: 0;
-}
-.preset-btn:hover { transform: scale(1.15); filter: brightness(1.2); }
-.dc-status-text {
-  font-size: 10px; color: var(--text); padding: 1px 4px; margin: 2px 0;
-  text-align: center; line-height: 1.2; overflow: hidden; text-overflow: ellipsis;
-  white-space: nowrap; font-weight: 500;
-}
-.breakdown-item { display: inline-flex; }
-}
 </style>
 </head>
 <body>
@@ -341,7 +326,6 @@ body {
 <div class="calendar-wrap">
   <div class="weekdays" id="weekdays"></div>
   <div class="cal-grid" id="cal-grid"></div>
-  <div id="breakdown" style="margin-top:10px;"></div>
 </div>
 
 <!-- ═══════════ DAY MODAL ═══════════ -->
@@ -357,11 +341,6 @@ body {
 <!-- ═══════════ ITEMS MANAGER MODAL ═══════════ -->
 <div class="modal-overlay hidden" id="item-mgr-overlay" onclick="if(event.target===this)closeItemManager()">
   <div class="modal" id="item-mgr-modal"></div>
-</div>
-
-<!-- ═══════════ PRESET MANAGER MODAL ═══════════ -->
-<div class="modal-overlay hidden" id="preset-mgr-overlay" onclick="if(event.target===this)closePresetManager()">
-  <div class="modal" id="preset-mgr-modal"></div>
 </div>
 
 <!-- ═══════════ TOAST ═══════════ -->
@@ -387,15 +366,15 @@ const DEFAULT_DATA = {
     { id: 'hobby',        name: 'Vaļasprieks',  emoji: '🎮', color: '#2dd4bf' },
   ],
   tabData: {
-    sports:        {statusPresets:[{id:"bad",name:"Slikti",emoji:"🔴",color:"#991b1b"},{id:"ok",name:"OK",emoji:"🟡",color:"#a16207"},{id:"good",name:"Labi",emoji:"🟢",color:"#166534"},{id:"amazing",name:"Lieliski",emoji:"💖",color:"#9d174d"}],dayStatuses:{},items: [{id:'gym',name:'Gym',emoji:'🏋️',color:'#818cf8'},{id:'protein',name:'Proteīns',emoji:'🥩',color:'#60a5fa'},{id:'cardio',name:'Kardio',emoji:'🏃',color:'#34d399'},{id:'weight',name:'Svars',emoji:'⚖️',color:'#c084fc'}], months:{} },
-    food:          {statusPresets:[{id:"bad",name:"Slikti",emoji:"🔴",color:"#991b1b"},{id:"ok",name:"OK",emoji:"🟡",color:"#a16207"},{id:"good",name:"Labi",emoji:"🟢",color:"#166534"},{id:"amazing",name:"Lieliski",emoji:"💖",color:"#9d174d"}],dayStatuses:{},items: [{id:'breakfast',name:'Brokastis',emoji:'🥐',color:'#fbbf24'},{id:'lunch',name:'Pusdienas',emoji:'🍲',color:'#34d399'},{id:'dinner',name:'Vakariņas',emoji:'🍝',color:'#f472b6'},{id:'snack',name:'Uzkodas',emoji:'🍿',color:'#fb923c'}], months:{} },
-    mood:          {statusPresets:[{id:"bad",name:"Slikti",emoji:"🔴",color:"#991b1b"},{id:"ok",name:"OK",emoji:"🟡",color:"#a16207"},{id:"good",name:"Labi",emoji:"🟢",color:"#166534"},{id:"amazing",name:"Lieliski",emoji:"💖",color:"#9d174d"}],dayStatuses:{},items: [{id:'mood_am',name:'Rīta noskaņa',emoji:'🌅',color:'#fbbf24'},{id:'mood_pm',name:'Vakara noskaņa',emoji:'🌙',color:'#a78bfa'},{id:'stress',name:'Stress',emoji:'😰',color:'#f87171'},{id:'energy',name:'Enerģija',emoji:'⚡',color:'#facc15'}], months:{} },
-    sleep:         {statusPresets:[{id:"bad",name:"Slikti",emoji:"🔴",color:"#991b1b"},{id:"ok",name:"OK",emoji:"🟡",color:"#a16207"},{id:"good",name:"Labi",emoji:"🟢",color:"#166534"},{id:"amazing",name:"Lieliski",emoji:"💖",color:"#9d174d"}],dayStatuses:{},items: [{id:'bedtime',name:'Gulētiešana',emoji:'🛌',color:'#a78bfa'},{id:'wakeup',name:'Pamošanās',emoji:'⏰',color:'#fbbf24'},{id:'quality',name:'Kvalitāte',emoji:'⭐',color:'#60a5fa'}], months:{} },
-    health:        {statusPresets:[{id:"bad",name:"Slikti",emoji:"🔴",color:"#991b1b"},{id:"ok",name:"OK",emoji:"🟡",color:"#a16207"},{id:"good",name:"Labi",emoji:"🟢",color:"#166534"},{id:"amazing",name:"Lieliski",emoji:"💖",color:"#9d174d"}],dayStatuses:{},items: [{id:'meds',name:'Zāles',emoji:'💊',color:'#f472b6'},{id:'symptoms',name:'Simptomi',emoji:'🤒',color:'#fb923c'},{id:'water',name:'Ūdens',emoji:'💧',color:'#60a5fa'}], months:{} },
-    relationships: {statusPresets:[{id:"bad",name:"Slikti",emoji:"🔴",color:"#991b1b"},{id:"ok",name:"OK",emoji:"🟡",color:"#a16207"},{id:"good",name:"Labi",emoji:"🟢",color:"#166534"},{id:"amazing",name:"Lieliski",emoji:"💖",color:"#9d174d"}],dayStatuses:{},items: [{id:'sex',name:'Sekss',emoji:'🔥',color:'#f472b6'},{id:'quality_r',name:'Kvalitāte',emoji:'⭐',color:'#fbbf24'},{id:'date',name:'Randiņš',emoji:'🌹',color:'#fb7185'},{id:'conflict',name:'Konflikts',emoji:'⚡',color:'#f87171'}], months:{} },
-    work:          {statusPresets:[{id:"bad",name:"Slikti",emoji:"🔴",color:"#991b1b"},{id:"ok",name:"OK",emoji:"🟡",color:"#a16207"},{id:"good",name:"Labi",emoji:"🟢",color:"#166534"},{id:"amazing",name:"Lieliski",emoji:"💖",color:"#9d174d"}],dayStatuses:{},items: [{id:'task',name:'Uzdevums',emoji:'📋',color:'#60a5fa'},{id:'meeting',name:'Sapulce',emoji:'🗣️',color:'#818cf8'},{id:'focus',name:'Fokuss',emoji:'🎯',color:'#34d399'}], months:{} },
-    social:        {statusPresets:[{id:"bad",name:"Slikti",emoji:"🔴",color:"#991b1b"},{id:"ok",name:"OK",emoji:"🟡",color:"#a16207"},{id:"good",name:"Labi",emoji:"🟢",color:"#166534"},{id:"amazing",name:"Lieliski",emoji:"💖",color:"#9d174d"}],dayStatuses:{},items: [{id:'event',name:'Pasākums',emoji:'🎉',color:'#fb923c'},{id:'call',name:'Zvans',emoji:'📞',color:'#60a5fa'},{id:'msg',name:'Ziņa',emoji:'💬',color:'#a78bfa'}], months:{} },
-    hobby:         {statusPresets:[{id:"bad",name:"Slikti",emoji:"🔴",color:"#991b1b"},{id:"ok",name:"OK",emoji:"🟡",color:"#a16207"},{id:"good",name:"Labi",emoji:"🟢",color:"#166534"},{id:"amazing",name:"Lieliski",emoji:"💖",color:"#9d174d"}],dayStatuses:{},items: [{id:'gaming',name:'Spēles',emoji:'🎮',color:'#2dd4bf'},{id:'reading',name:'Lasīšana',emoji:'📚',color:'#fbbf24'},{id:'music',name:'Mūzika',emoji:'🎵',color:'#f472b6'}], months:{} },
+    sports:        { items: [{id:'gym',name:'Gym',emoji:'🏋️',color:'#818cf8'},{id:'protein',name:'Proteīns',emoji:'🥩',color:'#60a5fa'},{id:'cardio',name:'Kardio',emoji:'🏃',color:'#34d399'},{id:'weight',name:'Svars',emoji:'⚖️',color:'#c084fc'}], months:{} },
+    food:          { items: [{id:'breakfast',name:'Brokastis',emoji:'🥐',color:'#fbbf24'},{id:'lunch',name:'Pusdienas',emoji:'🍲',color:'#34d399'},{id:'dinner',name:'Vakariņas',emoji:'🍝',color:'#f472b6'},{id:'snack',name:'Uzkodas',emoji:'🍿',color:'#fb923c'}], months:{} },
+    mood:          { items: [{id:'mood_am',name:'Rīta noskaņa',emoji:'🌅',color:'#fbbf24'},{id:'mood_pm',name:'Vakara noskaņa',emoji:'🌙',color:'#a78bfa'},{id:'stress',name:'Stress',emoji:'😰',color:'#f87171'},{id:'energy',name:'Enerģija',emoji:'⚡',color:'#facc15'}], months:{} },
+    sleep:         { items: [{id:'bedtime',name:'Gulētiešana',emoji:'🛌',color:'#a78bfa'},{id:'wakeup',name:'Pamošanās',emoji:'⏰',color:'#fbbf24'},{id:'quality',name:'Kvalitāte',emoji:'⭐',color:'#60a5fa'}], months:{} },
+    health:        { items: [{id:'meds',name:'Zāles',emoji:'💊',color:'#f472b6'},{id:'symptoms',name:'Simptomi',emoji:'🤒',color:'#fb923c'},{id:'water',name:'Ūdens',emoji:'💧',color:'#60a5fa'}], months:{} },
+    relationships: { items: [{id:'sex',name:'Sekss',emoji:'🔥',color:'#f472b6'},{id:'quality_r',name:'Kvalitāte',emoji:'⭐',color:'#fbbf24'},{id:'date',name:'Randiņš',emoji:'🌹',color:'#fb7185'},{id:'conflict',name:'Konflikts',emoji:'⚡',color:'#f87171'}], months:{} },
+    work:          { items: [{id:'task',name:'Uzdevums',emoji:'📋',color:'#60a5fa'},{id:'meeting',name:'Sapulce',emoji:'🗣️',color:'#818cf8'},{id:'focus',name:'Fokuss',emoji:'🎯',color:'#34d399'}], months:{} },
+    social:        { items: [{id:'event',name:'Pasākums',emoji:'🎉',color:'#fb923c'},{id:'call',name:'Zvans',emoji:'📞',color:'#60a5fa'},{id:'msg',name:'Ziņa',emoji:'💬',color:'#a78bfa'}], months:{} },
+    hobby:         { items: [{id:'gaming',name:'Spēles',emoji:'🎮',color:'#2dd4bf'},{id:'reading',name:'Lasīšana',emoji:'📚',color:'#fbbf24'},{id:'music',name:'Mūzika',emoji:'🎵',color:'#f472b6'}], months:{} },
   }
 };
 
@@ -408,9 +387,6 @@ function loadData() {
       DEFAULT_DATA.tabs.forEach(dt => {
         if (!d.tabs.find(t => t.id === dt.id)) d.tabs.push(dt);
         if (!d.tabData[dt.id]) d.tabData[dt.id] = JSON.parse(JSON.stringify(DEFAULT_DATA.tabData[dt.id] || {items:[],months:{}}));
-        // v0.4 migration: ensure statusPresets + dayStatuses exist
-        if (!d.tabData[dt.id].statusPresets) d.tabData[dt.id].statusPresets = JSON.parse(JSON.stringify(DEFAULT_DATA.tabData[dt.id].statusPresets || [{id:'bad',name:'Slikti',emoji:'🔴',color:'#991b1b'},{id:'ok',name:'OK',emoji:'🟡',color:'#a16207'},{id:'good',name:'Labi',emoji:'🟢',color:'#166534'},{id:'amazing',name:'Lieliski',emoji:'💖',color:'#9d174d'}]));
-        if (!d.tabData[dt.id].dayStatuses) d.tabData[dt.id].dayStatuses = {};
       });
       return d;
     }
@@ -457,25 +433,24 @@ function getDayEntries(y, m, d) {
   return day?.entries || (Array.isArray(day) ? day : []);
 }
 
-function getStatusPresets() {
-  const td = DATA.tabData[DATA.activeTab];
-  return td?.statusPresets || [];
-}
-function getPresetById(id) { return getStatusPresets().find(p => p.id === id); }
-function getDayStatus(y, m, d) {
-  const td = DATA.tabData[DATA.activeTab];
-  if (!td || !td.dayStatuses) return null;
-  return td.dayStatuses[dayKey(y, m, d)] || null;
-}
-function setDayStatus(y, m, d, presetId, text) {
-  const td = DATA.tabData[DATA.activeTab];
-  if (!td) return;
-  if (!td.dayStatuses) td.dayStatuses = {};
+function getDayColor(y, m, d) {
+  const md = getMonthData(y, m);
   const dk = dayKey(y, m, d);
-  if (presetId || text) {
-    td.dayStatuses[dk] = { presetId: presetId || null, text: text || '' };
+  const day = md[dk];
+  return day?.color || null;
+}
+
+function setDayColor(y, m, d, color) {
+  const md = getMonthData(y, m);
+  const dk = dayKey(y, m, d);
+  if (!md[dk] || Array.isArray(md[dk])) {
+    md[dk] = { entries: Array.isArray(md[dk]) ? md[dk] : [], color: null };
+  }
+  if (color) {
+    md[dk].color = color;
   } else {
-    delete td.dayStatuses[dk];
+    delete md[dk].color;
+    if (!md[dk].entries || md[dk].entries.length === 0) delete md[dk];
   }
   saveData();
 }
@@ -483,7 +458,7 @@ function setDayStatus(y, m, d, presetId, text) {
 function setDayEntries(y, m, d, entries) {
   const md = getMonthData(y, m);
   const dk = dayKey(y, m, d);
-  if (entries.length === 0 && !md[dk]?.color && !getDayStatus(y,m,d)) {
+  if (entries.length === 0 && !md[dk]?.color) {
     delete md[dk];
   } else {
     if (!md[dk] || Array.isArray(md[dk])) {
@@ -592,15 +567,10 @@ function renderCalendar(y, m) {
     let cellClass = 'day-cell';
     if (isToday) cellClass += ' today';
 
-    const status = getDayStatus(y, m, d);
-    const preset = status?.presetId ? getPresetById(status.presetId) : null;
-    const statusColor = preset?.color || null;
-    const cellStyle = statusColor ? `background:${hexToRgba(statusColor,0.30)};box-shadow:inset 0 0 0 1px ${hexToRgba(statusColor,0.5)};` : '';
+    const dayColor = getDayColor(y, m, d);
+    const cellStyle = dayColor ? `background:${hexToRgba(dayColor,0.25)};box-shadow:inset 0 0 0 1px ${hexToRgba(dayColor,0.4)};` : '';
 
     let inner = `<div class="dc-head"><span class="dc-num">${d}</span><span class="dc-dow">${DAY_NAMES[dow]}</span></div>`;
-    if (status?.text) {
-      inner += `<div class="dc-status-text">${escHtml(status.text)}</div>`;
-    }
 
     if (entries.length > 0) {
       inner += '<div class="dc-entries">';
@@ -625,7 +595,6 @@ function renderCalendar(y, m) {
   }
 
   document.getElementById('cal-grid').innerHTML = html;
-  renderBreakdown(y, m);
   renderTabs();
   renderItemsBar();
 }
@@ -665,30 +634,17 @@ function openDay(y, m, d) {
     `<option value="${i.id}">${i.emoji} ${i.name}</option>`
   ).join('');
 
-  const dayStatus = getDayStatus(y, m, d);
-  const presets = getStatusPresets();
-  const presetBtns = presets.map(p => {
-    const active = dayStatus?.presetId === p.id ? `style="outline:2px solid #fff;outline-offset:1px;"` : '';
-    return `<button ${active} onclick="handleDayStatus(${y},${m},${d},'${p.id}')" title="${escHtml(p.name)}" class="preset-btn" style="background:${hexToRgba(p.color,0.3)};border:1px solid ${hexToRgba(p.color,0.5)};color:${p.color};">${p.emoji}</button>`;
-  }).join('');
+  const dayColor = getDayColor(y, m, d);
 
   document.getElementById('modal').innerHTML = `
     <div class="modal-header">
       <h2>${tab ? tab.emoji : ''} ${dateStr} <span style="color:var(--text-dim);font-weight:400;font-size:0.75em;">${dowName}</span></h2>
-      <div style="display:flex;gap:4px;">
-        <button class="modal-close" onclick="openPresetManager()" title="Rediģēt statusus" style="font-size:14px;padding:4px 8px;">⚙️</button>
-        <button class="modal-close" onclick="closeModal()">✕</button>
-      </div>
+      <button class="modal-close" onclick="closeModal()">✕</button>
     </div>
-    <div style="display:flex;align-items:center;gap:6px;margin-bottom:14px;padding:8px 12px;background:var(--bg-input);border-radius:var(--radius-sm);flex-wrap:wrap;">
-      <span style="font-size:0.75rem;color:var(--text-dim);margin-right:4px;">Statuss:</span>
-      ${presetBtns}
-      ${dayStatus?.presetId ? `<button onclick="handleDayStatus(${y},${m},${d},null)" style="background:none;border:none;color:var(--text-muted);cursor:pointer;font-size:0.7rem;padding:4px 8px;">✕ Noņemt</button>` : ''}
-    </div>
-    <div style="margin-bottom:14px;">
-      <input type="text" id="status-text" value="${escHtml(dayStatus?.text || '')}" placeholder="Īss teksts (redzams kalendārā)..."
-        style="width:100%;background:var(--bg-input);border:1px solid var(--border);color:var(--text);padding:6px 10px;border-radius:var(--radius-sm);font-family:inherit;font-size:0.82rem;"
-        onchange="handleDayStatusText(${y},${m},${d},this.value)">
+    <div style="display:flex;align-items:center;gap:8px;margin-bottom:14px;padding:8px 12px;background:var(--bg-input);border-radius:var(--radius-sm);">
+      <span style="font-size:0.75rem;color:var(--text-dim);">Dienas krāsa:</span>
+      <input type="color" id="day-color-picker" value="${dayColor || '#000000'}" onchange="handleDayColor(${y},${m},${d},this.value)" style="width:28px;height:28px;padding:0;border:none;border-radius:4px;cursor:pointer;">
+      ${dayColor ? `<button onclick="handleDayColor(${y},${m},${d},null)" style="background:none;border:none;color:var(--text-muted);cursor:pointer;font-size:0.7rem;">✕ Noņemt</button>` : `<span style="font-size:0.65rem;color:var(--text-muted);">(izvēlies krāsu dienas fonam)</span>`}
     </div>
     <div class="modal-entries">${entriesHtml}</div>
     <div class="add-form">
@@ -713,17 +669,10 @@ function closeModal() {
   renderCalendar(currentYear, currentMonth);
 }
 
-function handleDayStatus(y, m, d, presetId) {
-  const current = getDayStatus(y, m, d);
-  const text = document.getElementById('status-text')?.value || '';
-  setDayStatus(y, m, d, presetId, text);
+function handleDayColor(y, m, d, color) {
+  setDayColor(y, m, d, color || null);
   closeModal();
   openDay(y, m, d);
-}
-function handleDayStatusText(y, m, d, text) {
-  const current = getDayStatus(y, m, d);
-  setDayStatus(y, m, d, current?.presetId || null, text);
-  renderCalendar(currentYear, currentMonth);
 }
 
 function handleAddEntry(e, y, m, d) {
@@ -790,7 +739,7 @@ function handleAddTab(e) {
   const color = document.getElementById('new-tab-color').value;
   const id = 'tab_' + Date.now();
   DATA.tabs.push({ id, name, emoji, color });
-  DATA.tabData[id] = {statusPresets:[{id:"bad",name:"Slikti",emoji:"🔴",color:"#991b1b"},{id:"ok",name:"OK",emoji:"🟡",color:"#a16207"},{id:"good",name:"Labi",emoji:"🟢",color:"#166534"},{id:"amazing",name:"Lieliski",emoji:"💖",color:"#9d174d"}],dayStatuses:{},items: [], months: {} };
+  DATA.tabData[id] = { items: [], months: {} };
   DATA.activeTab = id;
   saveData();
   showToast(`Tabs "${name}" pievienots! ${emoji}`);
@@ -880,116 +829,6 @@ function deleteItem(itemId) {
 }
 
 // ═══════════════════════════════════════════════════════════════════════════
-// BREAKDOWN COUNTER
-// ═══════════════════════════════════════════════════════════════════════════
-function renderBreakdown(y, m) {
-  const el = document.getElementById('breakdown');
-  const td = DATA.tabData[DATA.activeTab];
-  if (!td || !td.dayStatuses) { el.innerHTML = ''; return; }
-
-  const presets = getStatusPresets();
-  if (presets.length === 0) { el.innerHTML = ''; return; }
-
-  // Count statuses for current month
-  const counts = {};
-  presets.forEach(p => counts[p.id] = 0);
-  let total = 0;
-
-  const daysInMonth = new Date(y, m, 0).getDate();
-  for (let d = 1; d <= daysInMonth; d++) {
-    const status = getDayStatus(y, m, d);
-    if (status?.presetId) {
-      counts[status.presetId] = (counts[status.presetId] || 0) + 1;
-      total++;
-    }
-  }
-
-  let html = '<div style="display:flex;gap:10px;flex-wrap:wrap;align-items:center;padding:4px 0;">';
-  html += '<span style="font-size:0.7rem;color:var(--text-muted);text-transform:uppercase;letter-spacing:0.05em;">Stats: </span>';
-  presets.forEach(p => {
-    html += `<div class="breakdown-item">
-      <span style="background:${hexToRgba(p.color,0.25)};border:1px solid ${hexToRgba(p.color,0.4)};color:${p.color};padding:3px 10px;border-radius:14px;font-size:0.7rem;white-space:nowrap;">
-        ${p.emoji} ${p.name}: <b>${counts[p.id]||0}</b>
-      </span>
-    </div>`;
-  });
-  html += `<span style="font-size:0.7rem;color:var(--text-dim);margin-left:4px;">no ${daysInMonth}</span>`;
-  html += '</div>';
-  el.innerHTML = html;
-}
-
-// ═══════════════════════════════════════════════════════════════════════════
-// PRESET MANAGER (edit status colors/names)
-// ═══════════════════════════════════════════════════════════════════════════
-function openPresetManager() {
-  const presets = getStatusPresets();
-  const itemsHtml = presets.map(p => `
-    <div class="mgr-item">
-      <span class="mgr-emoji">${p.emoji}</span>
-      <span class="mgr-color" style="background:${p.color}"></span>
-      <span class="mgr-name">${escHtml(p.name)}</span>
-      <button onclick="deletePreset('${p.id}')" title="Dzēst">✕</button>
-    </div>
-  `).join('');
-
-  document.getElementById('preset-mgr-modal').innerHTML = `
-    <div class="modal-header">
-      <h2>🎨 Statusu rediģēšana</h2>
-      <button class="modal-close" onclick="closePresetManager()">✕</button>
-    </div>
-    <div class="mgr-list">${itemsHtml || '<div class="no-entries">Nav statusu</div>'}</div>
-    <div class="add-form">
-      <h3>➕ Jauns statuss</h3>
-      <form onsubmit="handleAddPreset(event)">
-        <div class="mgr-add-row" style="margin-bottom:8px;">
-          <input type="text" id="new-preset-emoji" placeholder="🔵" style="width:50px;text-align:center;font-size:1.1rem;" maxlength="3" required>
-          <input type="text" id="new-preset-name" placeholder="Nosaukums" required>
-          <input type="color" id="new-preset-color" value="#3b82f6">
-        </div>
-        <button type="submit" class="btn">✓ Pievienot</button>
-      </form>
-    </div>
-  `;
-  document.getElementById('preset-mgr-overlay').classList.remove('hidden');
-}
-
-function closePresetManager() {
-  document.getElementById('preset-mgr-overlay').classList.add('hidden');
-  // Refresh the day modal if it's open
-  if (!document.getElementById('modal-overlay').classList.contains('hidden')) {
-    closeModal();
-    // Can't easily reopen, user will click again
-  }
-}
-
-function handleAddPreset(e) {
-  e.preventDefault();
-  const emoji = document.getElementById('new-preset-emoji').value.trim();
-  const name = document.getElementById('new-preset-name').value.trim();
-  const color = document.getElementById('new-preset-color').value;
-  const id = 'preset_' + Date.now();
-  const td = DATA.tabData[DATA.activeTab];
-  if (!td) return;
-  if (!td.statusPresets) td.statusPresets = [];
-  td.statusPresets.push({ id, name, emoji, color });
-  saveData();
-  showToast(`Statuss "${name}" pievienots! ${emoji}`);
-  openPresetManager();
-}
-
-function deletePreset(presetId) {
-  const td = DATA.tabData[DATA.activeTab];
-  if (!td) return;
-  const preset = td.statusPresets.find(p => p.id === presetId);
-  if (!preset) return;
-  if (!confirm(`Dzēst statusu "${preset.name}"? Esošās dienas paliks, bet bez nosaukuma.`)) return;
-  td.statusPresets = td.statusPresets.filter(p => p.id !== presetId);
-  saveData();
-  showToast(`Statuss dzēsts 🗑️`);
-  openPresetManager();
-}
-
-// ═══════════════════════════════════════════════════════════════════════════
 // NAVIGATION
 // ═══════════════════════════════════════════════════════════════════════════
 function prevMonth() {
@@ -1031,7 +870,7 @@ function showToast(msg) {
 // ═══════════════════════════════════════════════════════════════════════════
 document.addEventListener('keydown', e => {
   if (e.key === 'Escape') {
-    closeModal(); closeTabManager(); closeItemManager(); closePresetManager();
+    closeModal(); closeTabManager(); closeItemManager();
   }
   if (!document.querySelector('.modal-overlay:not(.hidden)')) {
     if (e.key === 'ArrowLeft') prevMonth();
