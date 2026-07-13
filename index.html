@@ -429,14 +429,43 @@ function getMonthData(y, m) {
 function getDayEntries(y, m, d) {
   const md = getMonthData(y, m);
   const dk = dayKey(y, m, d);
-  return md[dk] || [];
+  const day = md[dk];
+  return day?.entries || (Array.isArray(day) ? day : []);
+}
+
+function getDayColor(y, m, d) {
+  const md = getMonthData(y, m);
+  const dk = dayKey(y, m, d);
+  const day = md[dk];
+  return day?.color || null;
+}
+
+function setDayColor(y, m, d, color) {
+  const md = getMonthData(y, m);
+  const dk = dayKey(y, m, d);
+  if (!md[dk] || Array.isArray(md[dk])) {
+    md[dk] = { entries: Array.isArray(md[dk]) ? md[dk] : [], color: null };
+  }
+  if (color) {
+    md[dk].color = color;
+  } else {
+    delete md[dk].color;
+    if (!md[dk].entries || md[dk].entries.length === 0) delete md[dk];
+  }
+  saveData();
 }
 
 function setDayEntries(y, m, d, entries) {
   const md = getMonthData(y, m);
   const dk = dayKey(y, m, d);
-  if (entries.length === 0) delete md[dk];
-  else md[dk] = entries;
+  if (entries.length === 0 && !md[dk]?.color) {
+    delete md[dk];
+  } else {
+    if (!md[dk] || Array.isArray(md[dk])) {
+      md[dk] = { entries: Array.isArray(md[dk]) ? md[dk] : [], color: null };
+    }
+    md[dk].entries = entries;
+  }
   saveData();
 }
 
@@ -538,6 +567,9 @@ function renderCalendar(y, m) {
     let cellClass = 'day-cell';
     if (isToday) cellClass += ' today';
 
+    const dayColor = getDayColor(y, m, d);
+    const cellStyle = dayColor ? `background:${hexToRgba(dayColor,0.25)};box-shadow:inset 0 0 0 1px ${hexToRgba(dayColor,0.4)};` : '';
+
     let inner = `<div class="dc-head"><span class="dc-num">${d}</span><span class="dc-dow">${DAY_NAMES[dow]}</span></div>`;
 
     if (entries.length > 0) {
@@ -547,12 +579,10 @@ function renderCalendar(y, m) {
         const item = itemById(DATA.activeTab, e.itemId);
         const emoji = item ? item.emoji : '📌';
         const color = item ? item.color : '#666';
-        const timeStr = e.start ? `${e.start}${e.end ? '–'+e.end : ''}` : '';
         const title = e.title || (item ? item.name : '???');
         inner += `<div class="dc-entry" style="background:${hexToRgba(color,0.15)};border-left-color:${color};color:${color}">
           <span class="dc-emoji">${emoji}</span>
           <span class="dc-title">${escHtml(title)}</span>
-          ${timeStr ? `<span class="dc-time">${timeStr}</span>` : ''}
         </div>`;
       });
       if (entries.length > maxShow) {
@@ -561,7 +591,7 @@ function renderCalendar(y, m) {
       inner += '</div>';
     }
 
-    html += `<div class="${cellClass}" onclick="openDay(${y},${m},${d})">${inner}</div>`;
+    html += `<div class="${cellClass}" style="${cellStyle}" onclick="openDay(${y},${m},${d})">${inner}</div>`;
   }
 
   document.getElementById('cal-grid').innerHTML = html;
@@ -592,7 +622,6 @@ function openDay(y, m, d) {
         <span class="me-emoji">${emoji}</span>
         <div class="me-info">
           <div class="me-title">${escHtml(e.title || itemName)}</div>
-          <div class="me-meta">${itemName}${e.start ? ' • ' + e.start : ''}${e.end ? '–' + e.end : ''}${e.value ? ' • ' + e.value : ''}</div>
           ${e.notes ? `<div class="me-notes">${escHtml(e.notes)}</div>` : ''}
         </div>
         <button class="me-delete" onclick="event.stopPropagation();deleteEntryAndRefresh(${y},${m},${d},'${e.id}')" title="Dzēst">✕</button>
@@ -605,10 +634,17 @@ function openDay(y, m, d) {
     `<option value="${i.id}">${i.emoji} ${i.name}</option>`
   ).join('');
 
+  const dayColor = getDayColor(y, m, d);
+
   document.getElementById('modal').innerHTML = `
     <div class="modal-header">
       <h2>${tab ? tab.emoji : ''} ${dateStr} <span style="color:var(--text-dim);font-weight:400;font-size:0.75em;">${dowName}</span></h2>
       <button class="modal-close" onclick="closeModal()">✕</button>
+    </div>
+    <div style="display:flex;align-items:center;gap:8px;margin-bottom:14px;padding:8px 12px;background:var(--bg-input);border-radius:var(--radius-sm);">
+      <span style="font-size:0.75rem;color:var(--text-dim);">Dienas krāsa:</span>
+      <input type="color" id="day-color-picker" value="${dayColor || '#000000'}" onchange="handleDayColor(${y},${m},${d},this.value)" style="width:28px;height:28px;padding:0;border:none;border-radius:4px;cursor:pointer;">
+      ${dayColor ? `<button onclick="handleDayColor(${y},${m},${d},null)" style="background:none;border:none;color:var(--text-muted);cursor:pointer;font-size:0.7rem;">✕ Noņemt</button>` : `<span style="font-size:0.65rem;color:var(--text-muted);">(izvēlies krāsu dienas fonam)</span>`}
     </div>
     <div class="modal-entries">${entriesHtml}</div>
     <div class="add-form">
@@ -617,11 +653,6 @@ function openDay(y, m, d) {
         <div class="form-row">
           <select id="add-item">${itemOptions}</select>
           <input type="text" id="add-title" placeholder="Apraksts (piem., Rīta skrējiens)">
-        </div>
-        <div class="form-row">
-          <input type="time" id="add-start" style="flex:0.5" placeholder="Sākums">
-          <input type="time" id="add-end" style="flex:0.5" placeholder="Beigas">
-          <input type="text" id="add-value" placeholder="Vērtība (piem., 10x3, 7/10)" style="flex:0.5;min-width:100px;">
         </div>
         <div class="form-row">
           <textarea id="add-notes" placeholder="Piezīmes..."></textarea>
@@ -638,14 +669,17 @@ function closeModal() {
   renderCalendar(currentYear, currentMonth);
 }
 
+function handleDayColor(y, m, d, color) {
+  setDayColor(y, m, d, color || null);
+  closeModal();
+  openDay(y, m, d);
+}
+
 function handleAddEntry(e, y, m, d) {
   e.preventDefault();
   const entry = {
     itemId: document.getElementById('add-item').value,
     title: document.getElementById('add-title').value.trim() || null,
-    start: document.getElementById('add-start').value || null,
-    end: document.getElementById('add-end').value || null,
-    value: document.getElementById('add-value').value.trim() || null,
     notes: document.getElementById('add-notes').value.trim() || null,
   };
   addEntry(y, m, d, entry);
