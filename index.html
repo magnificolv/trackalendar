@@ -790,10 +790,11 @@ function deleteEntryAndRefresh(y, m, d, entryId) {
 // ═══════════════════════════════════════════════════════════════════════════
 function openTabManager() {
   const itemsHtml = DATA.tabs.map(t => `
-    <div class="mgr-item">
-      <span class="mgr-emoji">${t.emoji}</span>
-      <span class="mgr-color" style="background:${t.color}"></span>
-      <span class="mgr-name">${escHtml(t.name)}</span>
+    <div class="mgr-item" id="tab-row-${t.id}">
+      <span class="mgr-emoji" id="tab-emoji-${t.id}">${t.emoji}</span>
+      <span class="mgr-color" id="tab-color-${t.id}" style="background:${t.color}"></span>
+      <span class="mgr-name" id="tab-name-${t.id}">${escHtml(t.name)}</span>
+      <button onclick="startEditTab('${t.id}')" title="Rediģēt" style="color:var(--accent);">✎</button>
       ${DATA.tabs.length > 1 ? `<button onclick="deleteTab('${t.id}')" title="Dzēst tab">✕</button>` : ''}
     </div>
   `).join('');
@@ -850,6 +851,29 @@ function deleteTab(tabId) {
   showToast(`Tabs dzēsts 🗑️`);
   closeTabManager();
   goToday();
+}
+
+function startEditTab(tabId) {
+  const tab = tabById(tabId);
+  if (!tab) return;
+  const row = document.getElementById('tab-row-' + tabId);
+  if (!row) return;
+  row.innerHTML = '<input type="text" id="edit-tab-emoji" value="' + tab.emoji + '" style="width:40px;text-align:center;font-size:1.1rem;background:var(--bg-input);border:1px solid var(--border);color:var(--text);border-radius:4px;padding:2px;" maxlength="3" onclick="renderEmojiPicker(&apos;edit-tab-emoji&apos;,&apos;edit-tab&apos;)">' +
+    '<input type="text" id="edit-tab-name" value="' + escHtml(tab.name) + '" style="flex:1;background:var(--bg-input);border:1px solid var(--border);color:var(--text);border-radius:4px;padding:4px 8px;font-family:inherit;font-size:0.84rem;">' +
+    '<input type="color" id="edit-tab-color" value="' + tab.color + '" style="width:30px;height:28px;border:none;border-radius:4px;cursor:pointer;">' +
+    '<button onclick="saveEditTab('' + tabId + '')" style="background:var(--accent);border:none;color:#0b0d14;padding:4px 10px;border-radius:4px;cursor:pointer;font-weight:600;font-size:0.78rem;">✓</button>' +
+    '<button onclick="openTabManager()" style="background:none;border:none;color:var(--text-muted);cursor:pointer;font-size:0.78rem;">✕</button>';
+}
+
+function saveEditTab(tabId) {
+  const tab = tabById(tabId);
+  if (!tab) return;
+  tab.emoji = document.getElementById('edit-tab-emoji').value.trim() || tab.emoji;
+  tab.name = document.getElementById('edit-tab-name').value.trim() || tab.name;
+  tab.color = document.getElementById('edit-tab-color').value || tab.color;
+  saveData();
+  showToast('"' + tab.name + '" atjaunināts! ✎');
+  openTabManager();
 }
 
 // ═══════════════════════════════════════════════════════════════════════════
