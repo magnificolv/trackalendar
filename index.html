@@ -357,7 +357,7 @@ body {
     <button onclick="prevMonth()" title="Iepriekšējais mēnesis">◀</button>
     <div class="month-title" id="month-title"></div>
     <button onclick="nextMonth()" title="Nākamais mēnesis">▶</button>
-    <button class="btn-today" onclick="goToday()">Šodien</button><button class="btn-today" onclick="exportData()" title="Eksportēt datus">📤</button><button class="btn-today" onclick="importData()" title="Importēt datus">📥</button>
+    <button class="btn-today" onclick="exportData()" title="Eksportēt datus">📤</button><button class="btn-today" onclick="importData()" title="Importēt datus">📥</button>
   </div>
   <div class="items-bar" id="items-bar"></div>
 </div>
@@ -1074,10 +1074,11 @@ function pickEmoji(targetId, emoji) {
 function openPresetManager() {
   const presets = getStatusPresets();
   const itemsHtml = presets.map(p => `
-    <div class="mgr-item">
-      <span class="mgr-emoji">${p.emoji}</span>
-      <span class="mgr-color" style="background:${p.color}"></span>
-      <span class="mgr-name">${escHtml(p.name)}</span>
+    <div class="mgr-item" id="preset-row-${p.id}">
+      <span class="mgr-emoji" id="preset-emoji-${p.id}">${p.emoji}</span>
+      <span class="mgr-color" id="preset-color-${p.id}" style="background:${p.color}"></span>
+      <span class="mgr-name" id="preset-name-${p.id}">${escHtml(p.name)}</span>
+      <button onclick="startEditPreset('${p.id}')" title="Rediģēt" style="color:var(--accent);">✎</button>
       <button onclick="deletePreset('${p.id}')" title="Dzēst">✕</button>
     </div>
   `).join('');
@@ -1137,6 +1138,33 @@ function deletePreset(presetId) {
   td.statusPresets = td.statusPresets.filter(p => p.id !== presetId);
   saveData();
   showToast(`Statuss dzēsts 🗑️`);
+  openPresetManager();
+}
+
+function startEditPreset(presetId) {
+  const td = DATA.tabData[DATA.activeTab];
+  if (!td) return;
+  const preset = td.statusPresets.find(p => p.id === presetId);
+  if (!preset) return;
+  const row = document.getElementById('preset-row-' + presetId);
+  if (!row) return;
+  row.innerHTML = '<input type="text" id="edit-preset-emoji" value="' + preset.emoji + '" style="width:40px;text-align:center;font-size:1.1rem;background:var(--bg-input);border:1px solid var(--border);color:var(--text);border-radius:4px;padding:2px;" maxlength="3" onclick="renderEmojiPicker(&apos;edit-preset-emoji&apos;,&apos;edit-preset&apos;)">' +
+    '<input type="text" id="edit-preset-name" value="' + escHtml(preset.name) + '" style="flex:1;background:var(--bg-input);border:1px solid var(--border);color:var(--text);border-radius:4px;padding:4px 8px;font-family:inherit;font-size:0.84rem;">' +
+    '<input type="color" id="edit-preset-color" value="' + preset.color + '" style="width:30px;height:28px;border:none;border-radius:4px;cursor:pointer;">' +
+    '<button onclick="saveEditPreset(\'' + presetId + '\')" style="background:var(--accent);border:none;color:#0b0d14;padding:4px 10px;border-radius:4px;cursor:pointer;font-weight:600;font-size:0.78rem;">✓</button>' +
+    '<button onclick="openPresetManager()" style="background:none;border:none;color:var(--text-muted);cursor:pointer;font-size:0.78rem;">✕</button>';
+}
+
+function saveEditPreset(presetId) {
+  const td = DATA.tabData[DATA.activeTab];
+  if (!td) return;
+  const preset = td.statusPresets.find(p => p.id === presetId);
+  if (!preset) return;
+  preset.emoji = document.getElementById('edit-preset-emoji').value.trim() || preset.emoji;
+  preset.name = document.getElementById('edit-preset-name').value.trim() || preset.name;
+  preset.color = document.getElementById('edit-preset-color').value || preset.color;
+  saveData();
+  showToast('"' + preset.name + '" atjaunināts! ✎');
   openPresetManager();
 }
 
