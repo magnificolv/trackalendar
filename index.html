@@ -858,11 +858,12 @@ function startEditTab(tabId) {
   if (!tab) return;
   const row = document.getElementById('tab-row-' + tabId);
   if (!row) return;
-  row.innerHTML = '<input type="text" id="edit-tab-emoji" value="' + tab.emoji + '" style="width:40px;text-align:center;font-size:1.1rem;background:var(--bg-input);border:1px solid var(--border);color:var(--text);border-radius:4px;padding:2px;" maxlength="3" onclick="renderEmojiPicker(&apos;edit-tab-emoji&apos;,&apos;edit-tab&apos;)">' +
+  row.innerHTML =
+    '<input type="text" id="edit-tab-emoji" value="' + tab.emoji + '" style="width:40px;text-align:center;font-size:1.1rem;background:var(--bg-input);border:1px solid var(--border);color:var(--text);border-radius:4px;padding:2px;" maxlength="3">' +
     '<input type="text" id="edit-tab-name" value="' + escHtml(tab.name) + '" style="flex:1;background:var(--bg-input);border:1px solid var(--border);color:var(--text);border-radius:4px;padding:4px 8px;font-family:inherit;font-size:0.84rem;">' +
     '<input type="color" id="edit-tab-color" value="' + tab.color + '" style="width:30px;height:28px;border:none;border-radius:4px;cursor:pointer;">' +
-    '<button onclick="saveEditTab('' + tabId + '')" style="background:var(--accent);border:none;color:#0b0d14;padding:4px 10px;border-radius:4px;cursor:pointer;font-weight:600;font-size:0.78rem;">✓</button>' +
-    '<button onclick="openTabManager()" style="background:none;border:none;color:var(--text-muted);cursor:pointer;font-size:0.78rem;">✕</button>';
+    '<button onclick="saveEditTab(\'' + tabId + '\')" style="background:var(--accent);border:none;color:#0b0d14;padding:4px 10px;border-radius:4px;cursor:pointer;font-weight:600;font-size:0.78rem;">\u2713</button>' +
+    '<button onclick="openTabManager()" style="background:none;border:none;color:var(--text-muted);cursor:pointer;font-size:0.78rem;">\u2715</button>';
 }
 
 function saveEditTab(tabId) {
