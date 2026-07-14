@@ -433,13 +433,14 @@ function loadData() {
     if (raw) {
       const d = JSON.parse(raw);
       // Ensure all tabs from DEFAULT_DATA exist
-      DEFAULT_DATA.tabs.forEach(dt => {
-        if (!d.tabs.find(t => t.id === dt.id)) d.tabs.push(dt);
-        if (!d.tabData[dt.id]) d.tabData[dt.id] = JSON.parse(JSON.stringify(DEFAULT_DATA.tabData[dt.id] || {items:[],months:{}}));
-        // v0.4 migration: ensure statusPresets + dayStatuses exist
-        if (!d.tabData[dt.id].statusPresets) d.tabData[dt.id].statusPresets = JSON.parse(JSON.stringify(DEFAULT_DATA.tabData[dt.id].statusPresets || [{id:'bad',name:'Slikti',emoji:'🔴',color:'#991b1b'},{id:'ok',name:'OK',emoji:'🟡',color:'#a16207'},{id:'good',name:'Labi',emoji:'🟢',color:'#166534'},{id:'amazing',name:'Lieliski',emoji:'💖',color:'#9d174d'}]));
-        if (!d.tabData[dt.id].dayStatuses) d.tabData[dt.id].dayStatuses = {};
-      });
+      // Ensure data structure exists for existing tabs (but don't force-add deleted default tabs)
+      for (const t of d.tabs) {
+        if (!d.tabData[t.id]) d.tabData[t.id] = { statusPresets: [], dayStatuses: {}, items: [], months: {} };
+        if (!d.tabData[t.id].statusPresets) d.tabData[t.id].statusPresets = [{id:'bad',name:'Slikti',emoji:'🔴',color:'#991b1b'},{id:'ok',name:'OK',emoji:'🟡',color:'#a16207'},{id:'good',name:'Labi',emoji:'🟢',color:'#166534'},{id:'amazing',name:'Lieliski',emoji:'💖',color:'#9d174d'}];
+        if (!d.tabData[t.id].dayStatuses) d.tabData[t.id].dayStatuses = {};
+        if (!d.tabData[t.id].items) d.tabData[t.id].items = [];
+        if (!d.tabData[t.id].months) d.tabData[t.id].months = {};
+      }
       return d;
     }
   } catch(e) { console.error('Load error:', e); }
