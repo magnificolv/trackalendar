@@ -1026,17 +1026,12 @@ function renderBreakdown(y, m) {
         if (itemCounts[e.itemId] !== undefined) itemCounts[e.itemId]++;
       });
     }
-    const totalItems = Object.values(itemCounts).reduce((a,b) => a+b, 0);
-    if (totalItems > 0) {
-      html += '<div style="display:flex;gap:10px;flex-wrap:wrap;align-items:center;padding:2px 0;">';
+    html += '<div style="display:flex;gap:10px;flex-wrap:wrap;align-items:center;padding:2px 0;">';
       html += '<span style="font-size:0.7rem;color:var(--text-muted);text-transform:uppercase;letter-spacing:0.05em;">Itemi: </span>';
       items.forEach(it => {
-        if (itemCounts[it.id] > 0) {
-          html += `<span style="background:${hexToRgba(it.color,0.15)};border:1px solid ${hexToRgba(it.color,0.3)};color:${it.color};padding:3px 10px;border-radius:14px;font-size:0.7rem;white-space:nowrap;">${it.emoji} ${it.name}: <b>${itemCounts[it.id]}</b></span>`;
-        }
+          html += '<span style="background:' + hexToRgba(it.color,0.15) + ';border:1px solid ' + hexToRgba(it.color,0.3) + ';color:' + it.color + ';padding:3px 10px;border-radius:14px;font-size:0.7rem;white-space:nowrap;">' + it.emoji + ' ' + it.name + ': <b>' + (itemCounts[it.id]||0) + '</b></span>';
       });
       html += '</div>';
-    }
   }
   el.innerHTML = html;
 }
