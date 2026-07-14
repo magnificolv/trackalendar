@@ -320,6 +320,25 @@ body {
 }
 .dc-item-icons span { font-size: 11px; line-height: 1; }
 .breakdown-item { display: inline-flex; }
+
+/* ═══════════ EMOJI PICKER ═══════════ */
+.emoji-picker {
+  display: grid; grid-template-columns: repeat(10, 1fr); gap: 2px;
+  padding: 6px; background: var(--bg-input); border: 1px solid var(--border);
+  border-radius: var(--radius-sm); max-height: 140px; overflow-y: auto;
+  margin-top: 4px;
+}
+.emoji-picker span {
+  font-size: 18px; cursor: pointer; padding: 2px; text-align: center;
+  border-radius: 3px; transition: all 0.1s;
+}
+.emoji-picker span:hover { background: var(--border); transform: scale(1.2); }
+.emoji-cat-tabs { display: flex; gap: 3px; margin-top: 4px; flex-wrap: wrap; }
+.emoji-cat-tab {
+  font-size: 0.62rem; padding: 2px 8px; border-radius: 10px; cursor: pointer;
+  background: var(--bg-card); border: 1px solid var(--border); color: var(--text-dim);
+}
+.emoji-cat-tab:hover, .emoji-cat-tab.active { border-color: var(--accent); color: var(--accent); }
 }
 </style>
 </head>
@@ -369,6 +388,9 @@ body {
 <div class="modal-overlay hidden" id="preset-mgr-overlay" onclick="if(event.target===this)closePresetManager()">
   <div class="modal" id="preset-mgr-modal"></div>
 </div>
+
+<!-- ═══════════ EMOJI PICKER (global) ═══════════ -->
+<div id="emoji-picker-popup" style="display:none;position:fixed;z-index:300;background:var(--bg-card);border:1px solid var(--border-light);border-radius:var(--radius);padding:8px;box-shadow:0 10px 40px rgba(0,0,0,0.5);width:280px;" onclick="event.stopPropagation()"></div>
 
 <!-- ═══════════ TOAST ═══════════ -->
 <div class="toast" id="toast"></div>
@@ -592,7 +614,7 @@ function renderCalendar(y, m) {
   for (let d = 1; d <= daysInMonth; d++) {
     const dk = dayKey(y, m, d);
     const dow = (startDow + d - 1) % 7;
-    const entries = md[dk] || [];
+    const entries = getDayEntries(y, m, d);
     const isToday = dk === todayKey;
 
     let cellClass = 'day-cell';
@@ -786,7 +808,7 @@ function openTabManager() {
       <h3>➕ Jauns tabs</h3>
       <form onsubmit="handleAddTab(event)">
         <div class="mgr-add-row" style="margin-bottom:8px;">
-          <input type="text" id="new-tab-emoji" placeholder="😎" style="width:50px;text-align:center;font-size:1.1rem;" maxlength="3" required>
+          <input type="text" id="new-tab-emoji" placeholder="😎" style="width:50px;text-align:center;font-size:1.1rem;" maxlength="3" required onclick="renderEmojiPicker('new-tab-emoji','tab')">
           <input type="text" id="new-tab-name" placeholder="Nosaukums" required>
           <input type="color" id="new-tab-color" value="#818cf8">
         </div>
@@ -856,10 +878,11 @@ function openItemManager() {
       <h3>➕ Jauns tracking items</h3>
       <form onsubmit="handleAddItem(event)">
         <div class="mgr-add-row" style="margin-bottom:8px;">
-          <input type="text" id="new-item-emoji" placeholder="🏷️" style="width:50px;text-align:center;font-size:1.1rem;" maxlength="3" required>
+          <input type="text" id="new-item-emoji" placeholder="🏷️" style="width:50px;text-align:center;font-size:1.1rem;" maxlength="3" required onclick="renderEmojiPicker('new-item-emoji','item')">
           <input type="text" id="new-item-name" placeholder="Nosaukums" required>
           <input type="color" id="new-item-color" value="#818cf8">
         </div>
+        
         <button type="submit" class="btn">✓ Pievienot</button>
       </form>
     </div>
@@ -937,6 +960,59 @@ function renderBreakdown(y, m) {
   el.innerHTML = html;
 }
 
+
+// ═══════════════════════════════════════════════════════════════════════════
+// EMOJI PICKER DATA
+// ═══════════════════════════════════════════════════════════════════════════
+const EMOJI_CATS = {
+  '🏃 Aktivitātes': '🏃🏋️🤸⛹️🚴🏊🧗🏌️🤾🏄🚣🏇🤺⛷️🛹🏂🎿🛼',
+  '🍎 Ēdiens': '🍎🍊🍇🥩🍗🥚🧀🥗🍲🍝🍿🥐🍩☕🧃💊💧🥛🍺',
+  '😊 Sejas': '😊😂🥰😎🤩😤😰🥺😴🤒😈🤯🥳😡😭🤔🫡😇🫠',
+  '❤️ Simboli': '❤️💔🔥⭐💯✅❌⚡🌈🎯💪🧠👀🗣️💤💥✨🌟',
+  '🎮 Hobiji': '🎮🎵📚🎨🎬🎤🎧📱💻🖥️⌚📷🔧🛠️💰🎁🏆',
+  '🏠 Dzīve': '🏠🚗✈️🌍🌙☀️⏰📅📋🗂️💼🎓👶👨‍👩‍👧‍👦🐶💰',
+  '📊 Dati': '📊📈📉🗓️✅⏱️🔄📝🔍🎯🏷️💬🧮📌🔔',
+};
+
+let currentEmojiCat = '🏃 Aktivitātes';
+let activeEmojiTarget = null;
+
+function renderEmojiPicker(targetId, containerId) {
+  activeEmojiTarget = targetId;
+  const picker = document.getElementById('emoji-picker-popup');
+  if (!picker) return;
+  
+  // Position near the input
+  const input = document.getElementById(targetId);
+  if (input) {
+    const rect = input.getBoundingClientRect();
+    picker.style.left = rect.left + 'px';
+    picker.style.top = (rect.bottom + 4) + 'px';
+  }
+  
+  const emojis = EMOJI_CATS[currentEmojiCat] || '';
+  let html = '<div class="emoji-cat-tabs">';
+  Object.keys(EMOJI_CATS).forEach(cat => {
+    const active = cat === currentEmojiCat ? ' active' : '';
+    html += '<span class="emoji-cat-tab' + active + '" onclick="event.stopPropagation();currentEmojiCat=\'' + cat + '\';renderEmojiPicker(\'' + targetId + '\',\'' + containerId + '\');">' + cat.split(' ')[0] + '</span>';
+  });
+  html += '</div>';
+  html += '<div class="emoji-picker">';
+  [...emojis].forEach(e => {
+    html += '<span onclick="event.stopPropagation();pickEmoji(\'' + targetId + '\',\'' + e + '\')">' + e + '</span>';
+  });
+  html += '</div>';
+  picker.innerHTML = html;
+  picker.style.display = 'block';
+}
+
+function pickEmoji(targetId, emoji) {
+  const input = document.getElementById(targetId);
+  if (input) input.value = emoji;
+  document.getElementById('emoji-picker-popup').style.display = 'none';
+  activeEmojiTarget = null;
+}
+
 // ═══════════════════════════════════════════════════════════════════════════
 // PRESET MANAGER (edit status colors/names)
 // ═══════════════════════════════════════════════════════════════════════════
@@ -961,10 +1037,11 @@ function openPresetManager() {
       <h3>➕ Jauns statuss</h3>
       <form onsubmit="handleAddPreset(event)">
         <div class="mgr-add-row" style="margin-bottom:8px;">
-          <input type="text" id="new-preset-emoji" placeholder="🔵" style="width:50px;text-align:center;font-size:1.1rem;" maxlength="3" required>
+          <input type="text" id="new-preset-emoji" placeholder="🔵" style="width:50px;text-align:center;font-size:1.1rem;" maxlength="3" required onclick="renderEmojiPicker('new-preset-emoji','preset')">
           <input type="text" id="new-preset-name" placeholder="Nosaukums" required>
           <input type="color" id="new-preset-color" value="#3b82f6">
         </div>
+        
         <button type="submit" class="btn">✓ Pievienot</button>
       </form>
     </div>
@@ -1048,6 +1125,13 @@ function showToast(msg) {
 // ═══════════════════════════════════════════════════════════════════════════
 // KEYBOARD
 // ═══════════════════════════════════════════════════════════════════════════
+document.addEventListener('click', e => {
+  const picker = document.getElementById('emoji-picker-popup');
+  if (picker && picker.style.display === 'block' && !picker.contains(e.target) && e.target !== document.getElementById(activeEmojiTarget)) {
+    picker.style.display = 'none';
+  }
+});
+
 document.addEventListener('keydown', e => {
   if (e.key === 'Escape') {
     closeModal(); closeTabManager(); closeItemManager(); closePresetManager();
