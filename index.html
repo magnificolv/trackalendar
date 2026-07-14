@@ -310,9 +310,15 @@ body {
 .preset-btn:hover { transform: scale(1.15); filter: brightness(1.2); }
 .dc-status-text {
   font-size: 10px; color: var(--text); padding: 1px 4px; margin: 2px 0;
-  text-align: center; line-height: 1.2; overflow: hidden; text-overflow: ellipsis;
-  white-space: nowrap; font-weight: 500;
+  text-align: center; line-height: 1.3; overflow: hidden;
+  white-space: pre-wrap; word-break: break-word; font-weight: 500;
+  max-height: 42px;
 }
+.dc-item-icons {
+  display: flex; gap: 1px; flex-wrap: wrap; justify-content: center;
+  padding: 1px 0; margin-top: auto;
+}
+.dc-item-icons span { font-size: 11px; line-height: 1; }
 .breakdown-item { display: inline-flex; }
 }
 </style>
@@ -621,6 +627,18 @@ function renderCalendar(y, m) {
       inner += '</div>';
     }
 
+    // Add item emoji icons row
+    if (entries.length > 0) {
+      const uniqueItems = [...new Map(entries.map(e => [e.itemId, itemById(DATA.activeTab, e.itemId)])).values()].filter(Boolean);
+      if (uniqueItems.length > 0) {
+        inner += '<div class="dc-item-icons">';
+        uniqueItems.forEach(item => {
+          inner += `<span title="${escHtml(item.name)}">${item.emoji}</span>`;
+        });
+        inner += '</div>';
+      }
+    }
+
     html += `<div class="${cellClass}" style="${cellStyle}" onclick="openDay(${y},${m},${d})">${inner}</div>`;
   }
 
@@ -649,11 +667,12 @@ function openDay(y, m, d) {
       const color = item ? item.color : '#666';
       const emoji = item ? item.emoji : '📌';
       const itemName = item ? item.name : '???';
+      const notesHtml = e.notes ? `<div class="me-notes">${escHtml(e.notes)}</div>` : '';
       return `<div class="modal-entry" style="border-left-color:${color}">
         <span class="me-emoji">${emoji}</span>
         <div class="me-info">
-          <div class="me-title">${escHtml(e.title || itemName)}</div>
-          ${e.notes ? `<div class="me-notes">${escHtml(e.notes)}</div>` : ''}
+          <div class="me-title">${escHtml(e.title || '')}${e.title && itemName ? ' • ' : ''}${!e.title ? escHtml(itemName) : ''}<span style="color:var(--text-dim);font-weight:400;font-size:0.75em;">${e.title && itemName ? escHtml(itemName) : ''}</span></div>
+          ${notesHtml}
         </div>
         <button class="me-delete" onclick="event.stopPropagation();deleteEntryAndRefresh(${y},${m},${d},'${e.id}')" title="Dzēst">✕</button>
       </div>`;
@@ -686,9 +705,9 @@ function openDay(y, m, d) {
       ${dayStatus?.presetId ? `<button onclick="handleDayStatus(${y},${m},${d},null)" style="background:none;border:none;color:var(--text-muted);cursor:pointer;font-size:0.7rem;padding:4px 8px;">✕ Noņemt</button>` : ''}
     </div>
     <div style="margin-bottom:14px;">
-      <input type="text" id="status-text" value="${escHtml(dayStatus?.text || '')}" placeholder="Īss teksts (redzams kalendārā)..."
-        style="width:100%;background:var(--bg-input);border:1px solid var(--border);color:var(--text);padding:6px 10px;border-radius:var(--radius-sm);font-family:inherit;font-size:0.82rem;"
-        onchange="handleDayStatusText(${y},${m},${d},this.value)">
+      <textarea id="status-text" placeholder="Īss teksts (redzams kalendārā, Enter=jauna rinda)..."
+        style="width:100%;background:var(--bg-input);border:1px solid var(--border);color:var(--text);padding:6px 10px;border-radius:var(--radius-sm);font-family:inherit;font-size:0.82rem;resize:vertical;min-height:36px;max-height:72px;"
+        onchange="handleDayStatusText(${y},${m},${d},this.value)">${escHtml(dayStatus?.text || '')}</textarea>
     </div>
     <div class="modal-entries">${entriesHtml}</div>
     <div class="add-form">
