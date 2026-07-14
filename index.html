@@ -357,7 +357,7 @@ body {
     <button onclick="prevMonth()" title="Iepriekšējais mēnesis">◀</button>
     <div class="month-title" id="month-title"></div>
     <button onclick="nextMonth()" title="Nākamais mēnesis">▶</button>
-    <button class="btn-today" onclick="goToday()">Šodien</button>
+    <button class="btn-today" onclick="goToday()">Šodien</button><button class="btn-today" onclick="exportData()" title="Eksportēt datus">📤</button><button class="btn-today" onclick="importData()" title="Importēt datus">📥</button>
   </div>
   <div class="items-bar" id="items-bar"></div>
 </div>
@@ -637,7 +637,7 @@ function renderCalendar(y, m) {
         const item = itemById(DATA.activeTab, e.itemId);
         const emoji = item ? item.emoji : '📌';
         const color = item ? item.color : '#666';
-        const title = e.title || (item ? item.name : '???');
+        const title = item ? item.name : '???';
         inner += `<div class="dc-entry" style="background:${hexToRgba(color,0.15)};border-left-color:${color};color:${color}">
           <span class="dc-emoji">${emoji}</span>
           <span class="dc-title">${escHtml(title)}</span>
@@ -860,10 +860,11 @@ function openItemManager() {
   const items = getActiveItems();
 
   const itemsHtml = items.map(i => `
-    <div class="mgr-item">
-      <span class="mgr-emoji">${i.emoji}</span>
-      <span class="mgr-color" style="background:${i.color}"></span>
-      <span class="mgr-name">${escHtml(i.name)}</span>
+    <div class="mgr-item" id="item-row-${i.id}">
+      <span class="mgr-emoji" id="item-emoji-${i.id}">${i.emoji}</span>
+      <span class="mgr-color" id="item-color-${i.id}" style="background:${i.color}"></span>
+      <span class="mgr-name" id="item-name-${i.id}">${escHtml(i.name)}</span>
+      <button onclick="startEditItem('${i.id}')" title="Rediģēt" style="color:var(--accent);">✎</button>
       <button onclick="deleteItem('${i.id}')" title="Dzēst">✕</button>
     </div>
   `).join('');
@@ -921,6 +922,36 @@ function deleteItem(itemId) {
   openItemManager();
 }
 
+function startEditItem(itemId) {
+  const td = DATA.tabData[DATA.activeTab];
+  if (!td) return;
+  const item = td.items.find(i => i.id === itemId);
+  if (!item) return;
+
+  const row = document.getElementById('item-row-' + itemId);
+  if (!row) return;
+  row.innerHTML = `
+    <input type="text" id="edit-item-emoji" value="${item.emoji}" style="width:40px;text-align:center;font-size:1.1rem;background:var(--bg-input);border:1px solid var(--border);color:var(--text);border-radius:4px;padding:2px;" maxlength="3" onclick="renderEmojiPicker('edit-item-emoji','edit-item')">
+    <input type="text" id="edit-item-name" value="${escHtml(item.name)}" style="flex:1;background:var(--bg-input);border:1px solid var(--border);color:var(--text);border-radius:4px;padding:4px 8px;font-family:inherit;font-size:0.84rem;">
+    <input type="color" id="edit-item-color" value="${item.color}" style="width:30px;height:28px;border:none;border-radius:4px;cursor:pointer;">
+    <button onclick="saveEditItem('${itemId}')" style="background:var(--accent);border:none;color:#0b0d14;padding:4px 10px;border-radius:4px;cursor:pointer;font-weight:600;font-size:0.78rem;">✓</button>
+    <button onclick="openItemManager()" style="background:none;border:none;color:var(--text-muted);cursor:pointer;font-size:0.78rem;">✕</button>
+  `;
+}
+
+function saveEditItem(itemId) {
+  const td = DATA.tabData[DATA.activeTab];
+  if (!td) return;
+  const item = td.items.find(i => i.id === itemId);
+  if (!item) return;
+  item.emoji = document.getElementById('edit-item-emoji').value.trim() || item.emoji;
+  item.name = document.getElementById('edit-item-name').value.trim() || item.name;
+  item.color = document.getElementById('edit-item-color').value || item.color;
+  saveData();
+  showToast(`"${item.name}" atjaunināts! ✎`);
+  openItemManager();
+}
+
 // ═══════════════════════════════════════════════════════════════════════════
 // BREAKDOWN COUNTER
 // ═══════════════════════════════════════════════════════════════════════════
@@ -957,6 +988,30 @@ function renderBreakdown(y, m) {
   });
   html += `<span style="font-size:0.7rem;color:var(--text-dim);margin-left:4px;">no ${daysInMonth}</span>`;
   html += '</div>';
+
+  // Item counts
+  const items = getActiveItems();
+  if (items.length > 0) {
+    const itemCounts = {};
+    items.forEach(it => itemCounts[it.id] = 0);
+    for (let d = 1; d <= daysInMonth; d++) {
+      const dayEntries = getDayEntries(y, m, d);
+      dayEntries.forEach(e => {
+        if (itemCounts[e.itemId] !== undefined) itemCounts[e.itemId]++;
+      });
+    }
+    const totalItems = Object.values(itemCounts).reduce((a,b) => a+b, 0);
+    if (totalItems > 0) {
+      html += '<div style="display:flex;gap:10px;flex-wrap:wrap;align-items:center;padding:2px 0;">';
+      html += '<span style="font-size:0.7rem;color:var(--text-muted);text-transform:uppercase;letter-spacing:0.05em;">Itemi: </span>';
+      items.forEach(it => {
+        if (itemCounts[it.id] > 0) {
+          html += `<span style="background:${hexToRgba(it.color,0.15)};border:1px solid ${hexToRgba(it.color,0.3)};color:${it.color};padding:3px 10px;border-radius:14px;font-size:0.7rem;white-space:nowrap;">${it.emoji} ${it.name}: <b>${itemCounts[it.id]}</b></span>`;
+        }
+      });
+      html += '</div>';
+    }
+  }
   el.innerHTML = html;
 }
 
@@ -1103,6 +1158,46 @@ function goToday() {
   currentYear = now.getFullYear();
   currentMonth = now.getMonth() + 1;
   renderCalendar(currentYear, currentMonth);
+}
+
+// ═══════════════════════════════════════════════════════════════════════════
+// EXPORT / IMPORT
+// ═══════════════════════════════════════════════════════════════════════════
+function exportData() {
+  const json = JSON.stringify(DATA, null, 2);
+  const blob = new Blob([json], {type: 'application/json'});
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement('a');
+  const now = new Date().toISOString().slice(0,10);
+  a.href = url; a.download = `trackalendar-backup-${now}.json`;
+  a.click();
+  URL.revokeObjectURL(url);
+  showToast('Dati eksportēti! 📤');
+}
+
+function importData() {
+  const input = document.createElement('input');
+  input.type = 'file'; input.accept = '.json';
+  input.onchange = e => {
+    const file = e.target.files[0];
+    if (!file) return;
+    const reader = new FileReader();
+    reader.onload = ev => {
+      try {
+        const imported = JSON.parse(ev.target.result);
+        if (!imported.tabs || !imported.tabData) throw new Error('Invalid format');
+        if (!confirm(`Importēt datus no "${file.name}"? Esošie dati tiks aizvietoti!`)) return;
+        DATA = imported;
+        saveData();
+        showToast('Dati importēti! 📥');
+        goToday();
+      } catch(err) {
+        showToast('❌ Nederīgs fails!');
+      }
+    };
+    reader.readAsText(file);
+  };
+  input.click();
 }
 
 // ═══════════════════════════════════════════════════════════════════════════
